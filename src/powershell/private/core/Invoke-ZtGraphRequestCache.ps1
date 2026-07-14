@@ -123,7 +123,14 @@
 	}
 
 	if (-not $isBatch -and -not $DisableCache) {
-		# Update cache
+		# Prevent unbounded memory growth on large tenants. When the cache exceeds the entry limit,
+		# clear it entirely rather than implementing LRU — the cache is a performance optimization,
+		# not a correctness requirement. Default: 10000 entries (~2-4 GB at typical response sizes).
+		$maxCacheEntries = Get-PSFConfigValue -FullName 'ZeroTrustAssessment.Graph.MaxCacheEntries' -Fallback 10000
+		if ($script:__ZtSession.GraphCache.Value.Count -ge $maxCacheEntries) {
+			Write-PSFMessage "Graph cache reached $maxCacheEntries entries, clearing to prevent memory exhaustion" -Level Warning -Tag Graph, Cache
+			$script:__ZtSession.GraphCache.Value.Clear()
+		}
 		$script:__ZtSession.GraphCache.Value[$cacheKey] = $results
 	}
 	$results
