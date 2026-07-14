@@ -42,7 +42,7 @@ function Test-Assessment-21801 {
     $sql = @"
 select distinct u.id, u.displayName, list_has_any(['passKeyDeviceBound', 'passKeyDeviceBoundAuthenticator', 'windowsHelloForBusiness'], methodsRegistered) as phishResistantAuthMethod,
     u.signInActivity.lastSuccessfulSignInDateTime
-from User u
+from vwUser u
     inner join UserRegistrationDetails ur on u.id = ur.id
 where u.accountEnabled
 "@

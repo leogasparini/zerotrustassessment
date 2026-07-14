@@ -1,0 +1,17 @@
+{
+    "@odata.context": "https://graph.microsoft.com/beta/$metadata#users(id,signInActivity)",
+    "value": [
+        {
+            "isZtModelRow": true,
+            "id": null,
+            "signInActivity": {
+                "lastSignInDateTime": "1900-01-01T00:00:00Z",
+                "lastSignInRequestId": null,
+                "lastNonInteractiveSignInDateTime": "1900-01-01T00:00:00Z",
+                "lastNonInteractiveSignInRequestId": null,
+                "lastSuccessfulSignInDateTime": "1900-01-01T00:00:00Z",
+                "lastSuccessfulSignInRequestId": null
+            }
+        }
+    ]
+}

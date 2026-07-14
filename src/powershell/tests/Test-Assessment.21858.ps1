@@ -36,7 +36,7 @@ function Test-Assessment-21858 {
     date_diff('day', try_cast(createdDateTime as date), today()) daysSinceCreated,
     strftime(try_cast(createdDateTime as date), '%Y-%m-%d') fmtCreatedDateTime,
     strftime(try_cast(signInActivity.lastSuccessfulSignInDateTime as date), '%Y-%m-%d') fmtLastSignInDateTime
-    FROM User
+    FROM vwUser
     WHERE UserType = 'Guest' AND AccountEnabled = true
 "@
 

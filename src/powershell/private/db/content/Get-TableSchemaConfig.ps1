@@ -43,6 +43,11 @@ function Get-TableSchemaConfig {
             'sample_size' = 50
             'reason' = 'Contains complex nested objects (settings, assignments) that may vary'
         }
+        'UserSignInActivity' = @{
+            'use_union_by_name' = $true
+            'sample_size' = 20
+            'reason' = 'signInActivity nested object may have mixed types in requestId fields'
+        }
     }
 
     $configs[$TableName]

@@ -525,6 +525,15 @@ $titleLine
 	Update-ZtProgressState -Stage 'export' -StageNumber 1 -StageName 'Exporting Tenant Data'
 	Export-ZtTenantData -ExportPath $exportPath -Days $Days -MaximumSignInLogQueryTime $MaximumSignInLogQueryTime -Pillar $Pillar -ThrottleLimit $ExportThrottleLimit -LogsPath $logsPath
 
+	# Release memory held by the Graph response cache. The export phase does not use the cache
+	# (it calls Invoke-MgGraphRequest directly), but any prior Graph calls during connection/setup
+	# may have populated it. Clearing now ensures the DB import and test phases start with minimal
+	# memory footprint — critical for large tenants (1M+ objects) where the cache can grow to
+	# multiple GB and cause OOM before tests even begin.
+	$script:__ZtSession.GraphCache.Value.Clear()
+	$script:__ZtSession.AzureCache.Value.Clear()
+	[System.GC]::Collect()
+
 	Update-ZtProgressState -Stage 'database' -StageNumber 1 -StageName 'Importing Data into Database' -ClearWorkers
 	$database = Export-Database -ExportPath $exportPath -Pillar $Pillar -LogsPath $logsPath
 
@@ -533,6 +542,12 @@ $titleLine
 		Write-PSFMessage -Message "Stage 2: Running Tests" -Tag stage
 		Update-ZtProgressState -Stage 'tests' -StageNumber 2 -StageName 'Running Tests' -ClearWorkers -TotalItems 0 -CompletedItems 0 -FailedItems 0 -InProgressItems 0
 		Invoke-ZtTests -Database $database -Tests $Tests -Pillar $Pillar -ThrottleLimit $TestThrottleLimit -LogsPath $logsPath -Timeout $Timeout -TestTimeout $TestTimeout
+
+		# Clear the Graph cache again after tests complete. During the test phase, 148+ tests make
+		# live Graph API calls that accumulate in the shared cross-runspace cache. On large tenants
+		# this can grow to 10+ GB. Clear before generating results to free memory.
+		$script:__ZtSession.GraphCache.Value.Clear()
+		$script:__ZtSession.AzureCache.Value.Clear()
 
 		Write-PSFMessage -Message "Stage 3: Adding Tenant Information" -Tag stage
 		Update-ZtProgressState -Stage 'tenantinfo' -StageNumber 3 -StageName 'Adding Tenant Information' -ClearWorkers -TotalItems 0

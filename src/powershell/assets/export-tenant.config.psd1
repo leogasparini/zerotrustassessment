@@ -102,13 +102,14 @@ Note: Avoid using the same names as used for the "General Parameters" section of
 	Uri = 'beta/auditlogs/signins'
 	QueryString = '%AuditQueryString%'
 	RelatedPropertyNames = @()
-	Type = 'Default' # PrivilegedGroup
+	Type = 'DateRangeParallel'
 
 	Pillar = @('Identity', 'AI')
 	# Environment = 'Global' # 'Global'
 	# IncludePlan = @('P2', 'Governance') # P2, Governance
 	ExcludePlan = @('Free') # Free
 	MaximumQueryTime = '%MaximumSignInLogQueryTime%'
+	Days = '%Days%'
 }
 @{
 	Name = 'AgentIdentityBlueprint'
@@ -143,9 +144,24 @@ Note: Avoid using the same names as used for the "General Parameters" section of
 @{
 	Name = 'User'
 	Uri = 'beta/users'
-	QueryString = '$top=999&$select=deletedDateTime, userType, streetAddress, onPremisesSipInfo, displayName, preferredLanguage, postalCode, faxNumber, onPremisesUserPrincipalName, serviceProvisioningErrors, cloudRealtimeCommunicationInfo, createdDateTime, signInSessionsValidFromDateTime, creationType, city, onPremisesDomainName, onPremisesProvisioningErrors, externalUserStateChangeDateTime, proxyAddresses, imAddresses, refreshTokensValidFromDateTime, onPremisesLastSyncDateTime, passwordPolicies, employeeLeaveDateTime, surname, employeeId, showInAddressList, usageLocation, isManagementRestricted, assignedPlans, authorizationInfo, id, provisionedPlans, userPrincipalName, accountEnabled, passwordProfile, onPremisesObjectIdentifier, state, ageGroup, isLicenseReconciliationNeeded, mobilePhone, employeeHireDate, securityIdentifier, onPremisesSyncEnabled, identities, jobTitle, onPremisesSecurityIdentifier, companyName, legalAgeGroupClassification, otherMails, mailNickname, employeeOrgData, assignedLicenses, employeeType, onPremisesSamAccountName, externalUserState, businessPhones, isResourceAccount, mail, infoCatalogs, deviceKeys, onPremisesImmutableId, externalUserConvertedOn, department, onPremisesExtensionAttributes, givenName, preferredDataLocation, officeLocation, onPremisesDistinguishedName, consentProvidedForMinor, country, signInActivity'
+	QueryString = '$top=999&$select=deletedDateTime, userType, streetAddress, onPremisesSipInfo, displayName, preferredLanguage, postalCode, faxNumber, onPremisesUserPrincipalName, serviceProvisioningErrors, cloudRealtimeCommunicationInfo, createdDateTime, signInSessionsValidFromDateTime, creationType, city, onPremisesDomainName, onPremisesProvisioningErrors, externalUserStateChangeDateTime, proxyAddresses, imAddresses, refreshTokensValidFromDateTime, onPremisesLastSyncDateTime, passwordPolicies, employeeLeaveDateTime, surname, employeeId, showInAddressList, usageLocation, isManagementRestricted, assignedPlans, authorizationInfo, id, provisionedPlans, userPrincipalName, accountEnabled, passwordProfile, onPremisesObjectIdentifier, state, ageGroup, isLicenseReconciliationNeeded, mobilePhone, employeeHireDate, securityIdentifier, onPremisesSyncEnabled, identities, jobTitle, onPremisesSecurityIdentifier, companyName, legalAgeGroupClassification, otherMails, mailNickname, employeeOrgData, assignedLicenses, employeeType, onPremisesSamAccountName, externalUserState, businessPhones, isResourceAccount, mail, infoCatalogs, deviceKeys, onPremisesImmutableId, externalUserConvertedOn, department, onPremisesExtensionAttributes, givenName, preferredDataLocation, officeLocation, onPremisesDistinguishedName, consentProvidedForMinor, country'
 	RelatedPropertyNames = @()
-	Type = 'Default' # PrivilegedGroup
+	Type = 'Default'
+
+	Pillar = @('Identity', 'Network')
+	# Environment = $null # 'Global'
+	# IncludePlan = @() # P2, Governance
+	ExcludePlan = @('Free') # Free
+	# MaximumQueryTime = '%MaximumSignInLogQueryTime%'
+}
+# Separate lightweight export for signInActivity only — avoids the per-user computed join penalty
+# on the main User export. Tests that need signInActivity JOIN against UserSignInActivity.
+@{
+	Name = 'UserSignInActivity'
+	Uri = 'beta/users'
+	QueryString = '$top=999&$select=id, signInActivity'
+	RelatedPropertyNames = @()
+	Type = 'Default'
 
 	Pillar = @('Identity', 'Network')
 	# Environment = $null # 'Global'

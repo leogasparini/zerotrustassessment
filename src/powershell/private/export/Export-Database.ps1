@@ -212,6 +212,17 @@ as
 
 	if ($needsUser) {
 		Import-EntraTableLogged -Database $database -ExportPath $ExportPath -TableName 'User' -LogsPath $LogsPath
+		Import-EntraTableLogged -Database $database -ExportPath $ExportPath -TableName 'UserSignInActivity' -LogsPath $LogsPath
+
+		# Create a view that merges User with UserSignInActivity for backward compatibility.
+		# Tests that reference User.signInActivity will continue to work via this view.
+		$sqlUserView = @"
+CREATE OR REPLACE VIEW vwUser AS
+SELECT u.*, usia.signInActivity
+FROM main."User" u
+LEFT JOIN main."UserSignInActivity" usia ON u.id = usia.id;
+"@
+		Invoke-DatabaseQuery -Database $database -Sql $sqlUserView -NonQuery
 	}
 
 	if ($needsApplicationAndServicePrincipal) {
