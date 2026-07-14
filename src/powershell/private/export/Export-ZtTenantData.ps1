@@ -95,6 +95,7 @@ function Export-ZtTenantData {
 	$configVariables = [PSFramework.Object.PsfHashtable]@{
 		AuditQueryString = Get-ZtiAuditQueryString -PastDays $Days
 		MaximumSignInLogQueryTime = $MaximumSignInLogQueryTime
+		Days = $Days
 	}
 	# If they key does not exist, pass through the original key, rather than return nothing
 	$configVariables.SetCalculator({
@@ -135,6 +136,7 @@ https://github.com/microsoft/zerotrustassessment/issues
 		if ($exportCfg.Uri -like "%*%") { $exportCfg.Uri = $configVariables[$exportCfg.Uri.Trim("%")] }
 		if ($exportCfg.QueryString -like "%*%") { $exportCfg.QueryString = $configVariables[$exportCfg.QueryString.Trim("%")] }
 		if ($exportCfg.MaximumQueryTime -like "%*%") { $exportCfg.MaximumQueryTime = $configVariables[$exportCfg.MaximumQueryTime.Trim("%")] }
+		if ($exportCfg.Days -like "%*%") { $exportCfg.Days = $configVariables[$exportCfg.Days.Trim("%")] }
 
 		$exportCfg
 	}

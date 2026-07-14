@@ -147,6 +147,10 @@
 					$exportParam = $Export | ConvertTo-PSFHashtable -ReferenceCommand Export-ZtGraphEntityPrivilegedGroup
 					$result.Output = Export-ZtGraphEntityPrivilegedGroup @exportParam -ExportPath $ExportPath -ErrorAction Stop
 				}
+				DateRangeParallel {
+					$exportParam = $Export | ConvertTo-PSFHashtable -ReferenceCommand Export-ZtGraphEntityDateRange
+					$result.Output = Export-ZtGraphEntityDateRange @exportParam -ExportPath $ExportPath -ErrorAction Stop
+				}
 				default {
 					$exportParam = $Export | ConvertTo-PSFHashtable -ReferenceCommand Export-ZtGraphEntity
 					$result.Output = Export-ZtGraphEntity @exportParam -ExportPath $ExportPath -ErrorAction Stop

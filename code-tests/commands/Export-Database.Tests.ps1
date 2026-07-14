@@ -28,7 +28,7 @@ Describe "Export-Database" {
             New-Item -ItemType Directory -Path $path -Force | Out-Null
 
             @(
-                'User', 'Application', 'ServicePrincipal', 'ServicePrincipalSignIn',
+                'User', 'UserSignInActivity', 'Application', 'ServicePrincipal', 'ServicePrincipalSignIn',
                 'SignIn', 'RoleDefinition', 'RoleAssignment', 'RoleAssignmentGroup',
                 'RoleAssignmentScheduleInstance', 'RoleAssignmentScheduleInstanceGroup',
                 'RoleEligibilityScheduleInstance', 'RoleEligibilityScheduleInstanceGroup',
@@ -538,6 +538,98 @@ where "@odata.type" = '#microsoft.graph.user'
             finally {
                 if ($db) { Disconnect-Database -Database $db }
             }
+        }
+    }
+
+    Context "vwUser view merges User and UserSignInActivity tables" {
+        <#
+            Validates that the vwUser view correctly LEFT JOINs User with UserSignInActivity,
+            making signInActivity accessible via the view for tests that need it (21801, 21858).
+        #>
+        BeforeAll {
+            $script:testPath7 = New-TestExportPath -Suffix 'vwuser'
+
+            # User — two users, one with sign-in data, one without
+            @{ value = @(
+                @{
+                    id                = 'u-00000001'
+                    displayName       = 'Active User'
+                    userPrincipalName = 'active@contoso.com'
+                    accountEnabled    = $true
+                    userType          = 'Member'
+                },
+                @{
+                    id                = 'u-00000002'
+                    displayName       = 'Guest User'
+                    userPrincipalName = 'guest@contoso.com'
+                    accountEnabled    = $true
+                    userType          = 'Guest'
+                }
+            ) } | ConvertTo-Json -Depth 3 |
+                Set-Content (Join-Path $script:testPath7 "User\User-0.json")
+
+            # UserSignInActivity — only the first user has sign-in activity
+            @{ value = @(
+                @{
+                    id              = 'u-00000001'
+                    signInActivity  = @{
+                        lastSignInDateTime                  = '2026-07-01T10:00:00Z'
+                        lastSignInRequestId                 = 'req-001'
+                        lastNonInteractiveSignInDateTime    = '2026-07-01T09:00:00Z'
+                        lastNonInteractiveSignInRequestId   = 'req-002'
+                        lastSuccessfulSignInDateTime        = '2026-07-01T10:00:00Z'
+                        lastSuccessfulSignInRequestId       = 'req-003'
+                    }
+                }
+            ) } | ConvertTo-Json -Depth 5 |
+                Set-Content (Join-Path $script:testPath7 "UserSignInActivity\UserSignInActivity-0.json")
+
+            Mock -ModuleName ZeroTrustAssessment Get-ZtLicenseInformation { return 'Free' }
+            { $script:dbVwUser = Export-Database -ExportPath $script:testPath7 -Pillar Identity } | Should -Not -Throw
+        }
+
+        AfterAll {
+            if ($script:dbVwUser) {
+                Disconnect-Database -Database $script:dbVwUser -ErrorAction SilentlyContinue
+            }
+            if ($script:testPath7 -and (Test-Path $script:testPath7)) {
+                Remove-Item $script:testPath7 -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+
+        It "Should create the vwUser view without error" {
+            $script:dbVwUser | Should -Not -BeNull
+        }
+
+        It "Should return signInActivity for users that have it" {
+            $rows = @(Invoke-DatabaseQuery -Database $script:dbVwUser -Sql @"
+SELECT id, signInActivity.lastSuccessfulSignInDateTime
+FROM vwUser
+WHERE id = 'u-00000001'
+"@)
+            $rows | Should -Not -BeNullOrEmpty
+            $rows[0]['lastSuccessfulSignInDateTime'] | Should -Not -BeNullOrEmpty
+        }
+
+        It "Should return NULL signInActivity for users without sign-in data" {
+            $rows = @(Invoke-DatabaseQuery -Database $script:dbVwUser -Sql @"
+SELECT id, signInActivity.lastSuccessfulSignInDateTime
+FROM vwUser
+WHERE id = 'u-00000002'
+"@)
+            $rows | Should -Not -BeNullOrEmpty
+            $rows[0]['lastSuccessfulSignInDateTime'] | Should -BeNullOrEmpty
+        }
+
+        It "Should include all User columns in the view" {
+            $rows = @(Invoke-DatabaseQuery -Database $script:dbVwUser -Sql @"
+SELECT id, displayName, userPrincipalName, userType
+FROM vwUser
+ORDER BY id
+"@)
+            $rows.Count | Should -Be 2
+            $rows[0]['displayName'] | Should -Be 'Active User'
+            $rows[1]['displayName'] | Should -Be 'Guest User'
         }
     }
 }
